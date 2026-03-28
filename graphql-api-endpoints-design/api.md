@@ -1,25 +1,60 @@
-# ---------------------------------------------------------
-# CUSTOM SCALARS
-# ---------------------------------------------------------
-# Required for handling dynamic JSON configurations and timestamps
+# GraphQL API Schema
+
+This document defines the GraphQL API schema for the Automation Workflow Builder platform.
+
+## Table of Contents
+
+- [Custom Scalars](#custom-scalars)
+- [Enums](#enums)
+- [Types](#types)
+- [Inputs](#inputs)
+- [Queries](#queries)
+- [Mutations](#mutations)
+
+---
+
+## Custom Scalars
+
+Required for handling dynamic JSON configurations and timestamps.
+
+```graphql
 scalar JSON
 scalar DateTime
+```
 
-# ---------------------------------------------------------
-# ENUMS
-# ---------------------------------------------------------
+---
+
+## Enums
+
+### BlueprintDifficulty
+
+Difficulty levels for blueprints.
+
+```graphql
 enum BlueprintDifficulty {
   BEGINNER
   INTERMEDIATE
   EXPERT
 }
+```
 
+### NodeType
+
+Types of nodes in a workflow.
+
+```graphql
 enum NodeType {
   trigger
   action
   utility
 }
+```
 
+### RunStatus
+
+Status of workflow runs and steps.
+
+```graphql
 enum RunStatus {
   pending
   running
@@ -28,7 +63,13 @@ enum RunStatus {
   cancelled
   skipped
 }
+```
 
+### IntegrationProvider
+
+Supported integration providers.
+
+```graphql
 enum IntegrationProvider {
   google
   slack
@@ -36,10 +77,17 @@ enum IntegrationProvider {
   google_sheet
   facebook
 }
+```
 
-# ---------------------------------------------------------
-# TYPES (Output Definitions)
-# ---------------------------------------------------------
+---
+
+## Types
+
+### User
+
+User account information.
+
+```graphql
 type User {
   id: ID!
   email: String!
@@ -47,17 +95,35 @@ type User {
   avatarKey: String
   createdAt: DateTime!
 }
+```
 
+### AuthPayload
+
+Authentication response payload.
+
+```graphql
 type AuthPayload {
   token: String!
   user: User!
 }
+```
 
+### MetricData
+
+Dashboard metric data point.
+
+```graphql
 type MetricData {
   label: String!
   value: Int!
 }
+```
 
+### Blueprint
+
+Pre-built workflow template.
+
+```graphql
 type Blueprint {
   id: ID!
   name: String!
@@ -68,12 +134,24 @@ type Blueprint {
   difficulty: BlueprintDifficulty!
   category: String!
 }
+```
 
+### BlueprintConnection
+
+Paginated blueprint results.
+
+```graphql
 type BlueprintConnection {
   items: [Blueprint!]!
   totalCount: Int!
 }
+```
 
+### Folder
+
+Organizational folder for workflows.
+
+```graphql
 type Folder {
   id: ID!
   name: String!
@@ -82,7 +160,13 @@ type Folder {
   createdAt: DateTime!
   updatedAt: DateTime!
 }
+```
 
+### Workflow
+
+Main workflow definition.
+
+```graphql
 type Workflow {
   id: ID!
   name: String!
@@ -95,7 +179,13 @@ type Workflow {
   # Nested resolution: Fetch the current active canvas if needed
   currentVersion: WorkflowVersion
 }
+```
 
+### WorkflowVersion
+
+Version history for a workflow.
+
+```graphql
 type WorkflowVersion {
   id: ID!
   workflowId: ID!
@@ -105,7 +195,13 @@ type WorkflowVersion {
   edges: [WorkflowEdge!]!
   createdAt: DateTime!
 }
+```
 
+### WorkflowNode
+
+Individual node within a workflow version.
+
+```graphql
 type WorkflowNode {
   id: ID!
   nodeType: NodeType!
@@ -117,7 +213,13 @@ type WorkflowNode {
   configJson: JSON! # Contains prompts, templates, API configs
   integrationAccountId: ID
 }
+```
 
+### WorkflowEdge
+
+Connection between workflow nodes.
+
+```graphql
 type WorkflowEdge {
   id: ID!
   sourceNodeId: ID!
@@ -125,7 +227,13 @@ type WorkflowEdge {
   sourceHandle: String! # String type to support dynamic AI routing (e.g., "Positive", "Negative")
   targetHandle: String
 }
+```
 
+### WorkflowRun
+
+Execution record for a workflow instance.
+
+```graphql
 type WorkflowRun {
   id: ID!
   workflowId: ID!
@@ -138,7 +246,13 @@ type WorkflowRun {
   errorMessage: String
   inputPayload: JSON
 }
+```
 
+### WorkflowRunStep
+
+Individual node execution record within a workflow run.
+
+```graphql
 type WorkflowRunStep {
   id: ID!
   workflowRunId: ID!
@@ -152,7 +266,13 @@ type WorkflowRunStep {
   durationMs: Int
   errorMessage: String
 }
+```
 
+### IntegrationAccount
+
+OAuth connection to an external service.
+
+```graphql
 type IntegrationAccount {
   id: ID!
   provider: IntegrationProvider!
@@ -160,10 +280,17 @@ type IntegrationAccount {
   status: String! # 'connected' | 'expired' | 'revoked'
   createdAt: DateTime!
 }
+```
 
-# ---------------------------------------------------------
-# INPUTS (For Mutations)
-# ---------------------------------------------------------
+---
+
+## Inputs
+
+### NodeInput
+
+Input for creating or updating workflow nodes.
+
+```graphql
 input NodeInput {
   id: ID! # Client generates UUID or passes existing
   nodeType: NodeType!
@@ -175,7 +302,13 @@ input NodeInput {
   configJson: JSON!
   integrationAccountId: ID
 }
+```
 
+### EdgeInput
+
+Input for creating or updating workflow edges.
+
+```graphql
 input EdgeInput {
   id: ID!
   sourceNodeId: ID!
@@ -183,67 +316,135 @@ input EdgeInput {
   sourceHandle: String!
   targetHandle: String
 }
+```
 
-# ---------------------------------------------------------
-# ROOT QUERY (Data Fetching)
-# ---------------------------------------------------------
-type Query {
-  # Auth
-  me: User!
+---
 
-  # Dashboard
-  recentWorkflows(limit: Int = 5): [Workflow!]!
-  workflowMetrics(timeframe: String!): [MetricData!]!
-  
-  # Blueprints
-  blueprints(category: String, difficulty: String, limit: Int = 10, offset: Int = 0): BlueprintConnection!
+## Queries
 
-  # Folders & Workflows
-  # If parentId is null, it fetches root folders
-  folders(parentId: ID): [Folder!]!
-  # If folderId is null, it fetches workflows in the root directory
-  workflows(folderId: ID): [Workflow!]!
-  # Fetches complete workflow data including versions, nodes, and edges
-  workflow(id: ID!): Workflow
+### Authentication
 
-  # Logs & Executions
-  workflowRuns(workflowId: ID!, isTestRun: Boolean, limit: Int = 20): [WorkflowRun!]!
-  runSteps(workflowRunId: ID!): [WorkflowRunStep!]!
+```graphql
+# Get current authenticated user
+me: User!
+```
 
-  # Integrations
-  integrations: [IntegrationAccount!]!
-}
+### Dashboard
 
-# ---------------------------------------------------------
-# ROOT MUTATION (Data Modification)
-# ---------------------------------------------------------
-type Mutation {
-  # Folders
-  createFolder(name: String!, parentId: ID): Folder!
-  updateFolder(id: ID!, name: String, parentId: ID): Folder!
-  deleteFolder(id: ID!): Boolean!
+```graphql
+# Get recent workflows for the dashboard
+recentWorkflows(limit: Int = 5): [Workflow!]!
 
-  # Workflows (Basic Meta)
-  createWorkflow(name: String!, folderId: ID): Workflow!
-  updateWorkflow(id: ID!, name: String, folderId: ID): Workflow!
-  deleteWorkflow(id: ID!): Boolean!
+# Get workflow metrics for a timeframe
+workflowMetrics(timeframe: String!): [MetricData!]!
+```
 
-  # Builder / Canvas (Bulk save)
-  # Frontend sends the entire canvas state to be saved as a draft
-  saveWorkflowDraft(workflowId: ID!, nodes: [NodeInput!]!, edges: [EdgeInput!]!): WorkflowVersion!
-  
-  # Locks the current draft and sets it as the active version for real executions
-  publishWorkflow(workflowId: ID!): WorkflowVersion!
+### Blueprints
 
-  # Blueprints
-  # Clones a blueprint into the user's workspace
-  useBlueprint(blueprintId: ID!, targetFolderId: ID): Workflow!
+```graphql
+# Get blueprints with optional filters
+blueprints(
+  category: String
+  difficulty: String
+  limit: Int = 10
+  offset: Int = 0
+): BlueprintConnection!
+```
 
-  # Execution
-  # Triggers a manual test run from the builder UI
-  testRunWorkflow(workflowId: ID!, inputPayload: JSON): WorkflowRun!
+### Folders & Workflows
 
-  # Integrations
-  connectIntegration(provider: IntegrationProvider!, authCode: String!): IntegrationAccount!
-  revokeIntegration(id: ID!): Boolean!
-}
+```graphql
+# Get folders (root folders if parentId is null)
+folders(parentId: ID): [Folder!]!
+
+# Get workflows (root workflows if folderId is null)
+workflows(folderId: ID): [Workflow!]!
+
+# Get complete workflow data including versions, nodes, and edges
+workflow(id: ID!): Workflow
+```
+
+### Logs & Executions
+
+```graphql
+# Get workflow runs with optional test run filter
+workflowRuns(workflowId: ID!, isTestRun: Boolean, limit: Int = 20): [WorkflowRun!]!
+
+# Get execution steps for a workflow run
+runSteps(workflowRunId: ID!): [WorkflowRunStep!]!
+```
+
+### Integrations
+
+```graphql
+# Get all integration accounts for the current user
+integrations: [IntegrationAccount!]!
+```
+
+---
+
+## Mutations
+
+### Folders
+
+```graphql
+# Create a new folder
+createFolder(name: String!, parentId: ID): Folder!
+
+# Update an existing folder
+updateFolder(id: ID!, name: String, parentId: ID): Folder!
+
+# Delete a folder
+deleteFolder(id: ID!): Boolean!
+```
+
+### Workflows
+
+```graphql
+# Create a new workflow
+createWorkflow(name: String!, folderId: ID): Workflow!
+
+# Update workflow metadata
+updateWorkflow(id: ID!, name: String, folderId: ID): Workflow!
+
+# Delete a workflow
+deleteWorkflow(id: ID!): Boolean!
+```
+
+### Builder / Canvas
+
+```graphql
+# Save the entire canvas state as a draft
+saveWorkflowDraft(
+  workflowId: ID!
+  nodes: [NodeInput!]!
+  edges: [EdgeInput!]!
+): WorkflowVersion!
+
+# Publish the current draft as the active version
+publishWorkflow(workflowId: ID!): WorkflowVersion!
+```
+
+### Blueprints
+
+```graphql
+# Clone a blueprint into the user's workspace
+useBlueprint(blueprintId: ID!, targetFolderId: ID): Workflow!
+```
+
+### Execution
+
+```graphql
+# Trigger a manual test run from the builder UI
+testRunWorkflow(workflowId: ID!, inputPayload: JSON): WorkflowRun!
+```
+
+### Integrations
+
+```graphql
+# Connect a new integration
+connectIntegration(provider: IntegrationProvider!, authCode: String!): IntegrationAccount!
+
+# Revoke an integration connection
+revokeIntegration(id: ID!): Boolean!
+```
