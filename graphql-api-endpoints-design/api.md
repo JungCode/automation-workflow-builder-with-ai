@@ -286,6 +286,29 @@ type IntegrationAccount {
 
 ## Inputs
 
+### RegisterInput
+
+Input for user registration.
+
+```graphql
+input RegisterInput {
+  email: String!
+  password: String!
+  username: String!
+}
+```
+
+### LoginInput
+
+Input for user login.
+
+```graphql
+input LoginInput {
+  email: String!
+  password: String!
+}
+```
+
 ### NodeInput
 
 Input for creating or updating workflow nodes.
@@ -384,6 +407,16 @@ integrations: [IntegrationAccount!]!
 ---
 
 ## Mutations
+
+### Authentication
+
+```graphql
+# Register a new user account
+register(input: RegisterInput!): AuthPayload!
+
+# Login with existing credentials
+login(input: LoginInput!): AuthPayload!
+```
 
 ### Folders
 
