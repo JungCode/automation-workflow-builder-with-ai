@@ -10,6 +10,10 @@ erDiagram
     users ||--o{ workflow_versions : "creates"
     users ||--o{ integration_accounts : "owns"
     users ||--o{ workflow_runs : "initiates"
+    users ||--o{ folders : "owns"
+
+    folders ||--o{ workflows : "contains"
+    folders }o--o{ folders : "parent_of"
 
     workflows ||--o{ workflow_versions : "has"
     workflows ||--o| blueprints : "template_for"
@@ -37,6 +41,15 @@ erDiagram
         date updated_at
     }
 
+    folders {
+        uuid id PK
+        string name
+        uuid parent_id FK
+        uuid owner_user_id FK
+        date created_at
+        date updated_at
+    }
+
     blueprints {
         uuid id PK
         uuid template_workflow_id FK,UK
@@ -58,6 +71,7 @@ erDiagram
         string description
         uuid created_by_user_id FK
         uuid current_version_id FK
+        uuid folder_id FK
         date created_at
         date updated_at
     }
@@ -117,6 +131,7 @@ erDiagram
         enum trigger_type
         jsonb input_payload
         enum status
+        boolean is_test_run
         date started_at
         date finished_at
         string error_message
@@ -149,6 +164,10 @@ erDiagram
 | `users`             | `workflow_versions`  | 1:N          | A user can create many versions                  |
 | `users`             | `integration_accounts` | 1:N        | A user can have many integration accounts        |
 | `users`             | `workflow_runs`      | 1:N          | A user can initiate many workflow runs           |
+| `users`             | `folders`            | 1:N          | A user can own many folders                      |
+| `folders`           | `workflows`          | 1:N          | A folder contains many workflows                 |
+| `folders`           | `folders`            | 1:N          | A folder can have child folders                  |
+| `workflows`         | `folders`            | N:1          | A workflow belongs to one folder                 |
 | `workflows`         | `workflow_versions`  | 1:N          | A workflow has many versions                     |
 | `workflows`         | `blueprints`         | 1:1          | A workflow can be a template for one blueprint   |
 | `workflows`         | `workflow_runs`      | 1:N          | A workflow can have many runs                    |

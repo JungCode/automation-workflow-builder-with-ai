@@ -9,6 +9,7 @@ This document describes the database schema for the Automation Workflow Builder 
 - [Users](#users)
 - [Blueprints](#blueprints)
 - [Workflows](#workflows)
+- [Folders](#folders)
 - [Workflow Versions](#workflow_versions)
 - [Workflow Nodes](#workflow_nodes)
 - [Workflow Edges](#workflow_edges)
@@ -18,7 +19,7 @@ This document describes the database schema for the Automation Workflow Builder 
 
 ---
 
-## Users
+## users
 
 Stores user account information.
 
@@ -34,7 +35,7 @@ Stores user account information.
 
 ---
 
-## Blueprints
+## blueprints
 
 Pre-built workflow templates that users can use as starting points.
 
@@ -57,7 +58,7 @@ Pre-built workflow templates that users can use as starting points.
 
 ---
 
-## Workflows
+## workflows
 
 Main workflow definitions owned by users.
 
@@ -68,12 +69,28 @@ Main workflow definitions owned by users.
 | `description`        | `string` | NULLABLE                     | Workflow description               |
 | `created_by_user_id` | `uuid`   | NOT NULL, FK(users)          | Owner user reference               |
 | `current_version_id` | `uuid`   | NULLABLE, FK(workflow_versions) | Currently active version        |
+| `folder_id`          | `uuid`   | NULLABLE, FK(folders)          | Parent folder reference         |
 | `created_at`         | `Date`   | NOT NULL                     | Record creation timestamp          |
 | `updated_at`         | `Date`   | NOT NULL                     | Record last update timestamp       |
 
 ---
 
-## Workflow Versions
+## folders
+
+Organizational folders for grouping workflows.
+
+| Column           | Type     | Constraints         | Description                                |
+| ---------------- | -------- | ------------------- | ------------------------------------------ |
+| `id`             | `uuid`   | PRIMARY KEY         | Unique identifier                          |
+| `name`           | `string` | NOT NULL            | Folder name (e.g., "Marketing", "HR")      |
+| `parent_id`      | `uuid`   | NULLABLE, FK(folders) | Parent folder ID. If null, this is a root folder |
+| `owner_user_id`  | `uuid`   | NOT NULL, FK(users) | Folder owner                               |
+| `created_at`     | `Date`   | NOT NULL            | Record creation timestamp                  |
+| `updated_at`     | `Date`   | NOT NULL            | Record last update timestamp               |
+
+---
+
+## workflow_versions
 
 Version history for workflows, supporting draft and published states.
 
@@ -94,7 +111,7 @@ Version history for workflows, supporting draft and published states.
 
 ---
 
-## Workflow Nodes
+## workflow_nodes
 
 Individual nodes within a workflow version (triggers, actions, utilities).
 
@@ -113,11 +130,20 @@ Individual nodes within a workflow version (triggers, actions, utilities).
 | `created_at`             | `Date`   | NOT NULL                           | Record creation timestamp                   |
 | `updated_at`             | `Date`   | NOT NULL                           | Record last update timestamp                |
 
-**Provider Apps:** `google_form` | `slack` | `gmail` | `google_sheet` | `facebook` | `system` | `utility`
+**Provider Apps:** `google_form` | `slack` | `gmail` | `google_sheet` | `facebook` | `system` | `utility` | `ai`
+
+**AI Router:** `provider_app = 'ai'` and `node_type = 'action'`
+```
+{
+  "task": "classification",
+  "user_prompt": "Phân tích email này xem khách hàng đang có thái độ gì: {{steps.node_gmail.output.body}}",
+  "output_branches": ["Tích cực", "Tiêu cực", "Bình thường"] 
+}
+```
 
 ---
 
-## Workflow Edges
+## workflow_edges
 
 Connections between nodes defining data flow and execution paths.
 
@@ -127,7 +153,7 @@ Connections between nodes defining data flow and execution paths.
 | `workflow_version_id`| `uuid`   | NOT NULL, FK(workflow_versions) | Parent workflow version                            |
 | `source_node_id`     | `uuid`   | NOT NULL, FK(workflow_nodes)    | Source node reference                              |
 | `target_node_id`     | `uuid`   | NOT NULL, FK(workflow_nodes)    | Target node reference                              |
-| `source_handle`      | `enum`   | NOT NULL                        | `default` \| `true` \| `false` \| `success` \| `error` |
+| `source_handle`      | `string`   | NOT NULL                        | `default` \| `true` \| `false` \| `success` \| `error` \| ... |
 | `target_handle`      | `string` | NULLABLE                        | Input key for multi-input target nodes             |
 | `created_at`         | `Date`   | NOT NULL                        | Record creation timestamp                          |
 | `updated_at`         | `Date`   | NOT NULL                        | Record last update timestamp                       |
@@ -138,7 +164,7 @@ Connections between nodes defining data flow and execution paths.
 
 ---
 
-## Integration Accounts
+## integration_accounts
 
 OAuth connections to external services.
 
@@ -153,9 +179,11 @@ OAuth connections to external services.
 | `created_at`     | `Date`   | NOT NULL            | Record creation timestamp                  |
 | `updated_at`     | `Date`   | NOT NULL            | Record last update timestamp               |
 
+- `UNIQUE(owner_user_id, provider, account_email)`
+
 ---
 
-## Workflow Runs
+## workflow_runs
 
 Execution records for workflow instances.
 
@@ -168,6 +196,7 @@ Execution records for workflow instances.
 | `trigger_type`         | `enum`   | NOT NULL                        | `manual` \| `webhook` \| `schedule`      |
 | `input_payload`        | `JSONB`  | NULLABLE                        | Input data for the run                   |
 | `status`               | `enum`   | NOT NULL                        | `pending` \| `running` \| `success` \| `failed` \| `cancelled` |
+| `is_test_run`          | `boolean`| NOT NULL, DEFAULT false         | Indicates if this is a test run          |
 | `started_at`           | `Date`   | NOT NULL                        | Execution start timestamp                |
 | `finished_at`          | `Date`   | NULLABLE                        | Execution end timestamp                  |
 | `error_message`        | `string` | NULLABLE                        | Error details if failed                  |
@@ -176,7 +205,7 @@ Execution records for workflow instances.
 
 ---
 
-## Workflow Run Steps
+## workflow_run_steps
 
 Individual node execution records within a workflow run.
 
