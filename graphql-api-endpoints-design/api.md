@@ -176,8 +176,12 @@ type Workflow {
   createdByUserId: ID!
   createdAt: DateTime!
   updatedAt: DateTime!
-  # Nested resolution: Fetch the current active canvas if needed
+
+  # Published/live workflow version
   currentVersion: WorkflowVersion
+
+  # Editable builder version
+  draftVersion: WorkflowVersion
 }
 ```
 
@@ -212,6 +216,7 @@ type WorkflowNode {
   positionY: Float
   configJson: JSON! # Contains prompts, templates, API configs
   integrationAccountId: ID
+  integrationAccount: IntegrationAccount
 }
 ```
 
@@ -282,6 +287,17 @@ type IntegrationAccount {
 }
 ```
 
+## Delete workflow node payload
+
+Delete workflow node response payload, includes deleted node ID and any related edge IDs that were also deleted.
+
+```graphql
+type DeleteWorkflowNodePayload {
+  deletedNodeId: ID!
+  deletedEdgeIds: [ID!]!
+}
+```
+
 ---
 
 ## Inputs
@@ -323,6 +339,17 @@ input NodeInput {
   positionX: Float
   positionY: Float
   configJson: JSON!
+  integrationAccountId: ID
+}
+
+input UpdateWorkflowNodeInput {
+  label: String
+  nodeType: NodeType
+  providerApp: String
+  actionKey: String
+  positionX: Float
+  positionY: Float
+  configJson: JSON
   integrationAccountId: ID
 }
 ```
@@ -385,6 +412,9 @@ workflows(folderId: ID): [Workflow!]!
 
 # Get complete workflow data including versions, nodes, and edges
 workflow(id: ID!): Workflow
+
+# Get a specific workflow node by ID
+workflowNode(workflowId: ID!, nodeId: ID!): WorkflowNode
 ```
 
 ### Logs & Executions
@@ -437,17 +467,24 @@ deleteFolder(id: ID!): Boolean!
 # Create a new workflow
 createWorkflow(name: String!, folderId: ID): Workflow!
 
-# Update workflow metadata
+# Update an existing workflow
 updateWorkflow(id: ID!, name: String, folderId: ID): Workflow!
 
 # Delete a workflow
 deleteWorkflow(id: ID!): Boolean!
+
+# Update a workflow node's configuration
+updateWorkflowNode(workflowId: ID!, nodeId: ID!, input: UpdateWorkflowNodeInput!): WorkflowNode!
+
+# Delete a workflow node and its associated edges
+deleteWorkflowNode(workflowId: ID!, nodeId: ID!): DeleteWorkflowNodePayload!
 ```
 
 ### Builder / Canvas
 
 ```graphql
 # Save the entire canvas state as a draft
+# If no draft version exists, backend may create one from the current published version.
 saveWorkflowDraft(
   workflowId: ID!
   nodes: [NodeInput!]!
