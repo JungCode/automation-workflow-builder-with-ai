@@ -115,20 +115,23 @@ Version history for workflows, supporting draft and published states.
 
 Individual nodes within a workflow version (triggers, actions, utilities).
 
-| Column                   | Type     | Constraints                        | Description                                 |
-| ------------------------ | -------- | ---------------------------------- | ------------------------------------------- |
-| `id`                     | `uuid`   | PRIMARY KEY                        | Unique identifier                           |
-| `workflow_version_id`    | `uuid`   | NOT NULL, FK(workflow_versions)    | Parent workflow version                     |
-| `integration_account_id` | `uuid`   | NULLABLE, FK(integration_accounts) | Linked integration account                  |
-| `node_type`              | `enum`   | NOT NULL                           | `trigger` \| `action` \| `utility`          |
-| `provider_app`           | `enum`   | NOT NULL                           | See providers below                         |
-| `action_key`             | `string` | NOT NULL                           | Specific action identifier                  |
-| `label`                  | `string` | NOT NULL                           | Display label for the node                  |
-| `position_x`             | `number` | NULLABLE                           | X coordinate (null for auto-layout)         |
-| `position_y`             | `number` | NULLABLE                           | Y coordinate (null for auto-layout)         |
-| `config_json`            | `JSONB`  | NOT NULL                           | Node configuration (API keys, templates, etc.) |
-| `created_at`             | `Date`   | NOT NULL                           | Record creation timestamp                   |
-| `updated_at`             | `Date`   | NOT NULL                           | Record last update timestamp                |
+| Column                   | Type        | Constraints                              | Description                                 |
+| ------------------------ | ----------- | --------------------------------------- | ------------------------------------------- |
+| `id`                     | `uuid`      | PRIMARY KEY                              | Unique identifier                           |
+| `workflow_version_id`    | `uuid`      | NOT NULL, FK(workflow_versions)         | Parent workflow version                     |
+| `integration_account_id`| `uuid`      | NULLABLE, FK(integration_accounts)     | Linked integration account                 |
+| `node_type`              | `enum`      | NOT NULL                                 | `trigger` \| `action` \| `utility`        |
+| `provider_app`            | `enum`      | NOT NULL                                 | See providers below                       |
+| `action_key`             | `string`    | NOT NULL                                 | Specific action identifier               |
+| `label`                  | `string`    | NOT NULL                                 | Display label for the node                |
+| `position_x`             | `number`    | NULLABLE                                 | X coordinate (null for auto-layout)       |
+| `position_y`             | `number`    | NULLABLE                                 | Y coordinate (null for auto-layout)       |
+| `config_json`            | `JSONB`     | NOT NULL                                 | Node configuration (API keys, templates, etc.) |
+| `connection_status`     | `enum`      | NOT NULL, DEFAULT 'untested'            | `untested` \| `testing` \| `success` \| `failed` |
+| `last_tested_at`         | `timestamptz`| NULLABLE                                 | When the last test was run                 |
+| `test_error_message`      | `varchar`   | NULLABLE                                 | Error detail if last test failed            |
+| `created_at`            | `Date`      | NOT NULL                                 | Record creation timestamp                |
+| `updated_at`             | `Date`      | NOT NULL                                 | Record last update timestamp             |
 
 **Provider Apps:** `google_form` | `slack` | `gmail` | `google_sheet` | `facebook` | `system` | `utility` | `ai`
 
@@ -140,6 +143,19 @@ Individual nodes within a workflow version (triggers, actions, utilities).
   "output_branches": ["Tích cực", "Tiêu cực", "Bình thường"] 
 }
 ```
+
+---
+
+## workflow_node_connection_status
+
+Connection test status for workflow nodes.
+
+| Value       | Description                              |
+| ------------ | --------------------------------------- |
+| `untested`  | Node has not been tested yet             |
+| `testing`  | Test is currently running                 |
+| `success`   | Last test passed                         |
+| `failed`    | Last test failed                         |
 
 ---
 

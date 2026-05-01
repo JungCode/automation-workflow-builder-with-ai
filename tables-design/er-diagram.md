@@ -97,6 +97,9 @@ erDiagram
         number position_x
         number position_y
         jsonb config_json
+        enum connection_status DEFAULT 'untested'
+        timestamptz last_tested_at
+        varchar test_error_message
         date created_at
         date updated_at
     }
